@@ -29,13 +29,13 @@ sub main {
     if($argstr =~ /\s-h\s/ ){
         print "usage:\n";
         print "      perl server.pl -p8080 -r /home/toor/webapp\n";
-	exit(0);
+        exit(0);
     }
-    if ( $argstr =~ /\s-p\s?\d{2,5}\s/ ) {
-        ( $port = $argstr ) =~ s/\s-p\s*?(\d+)\s/$1/;
+    if ( $argstr =~ /\s-p\s*(\d{2,5})\s/ ) {
+        $port = $1;
     }
-    if ( $argstr =~ /\s-r\s?\S+\s/ ) {
-        ( $root = $argstr ) =~ s/\s-r\s+(\S+)\s/$1/;
+    if ( $argstr =~ /\s-r\s?(\S+)\s/ ) {
+        $root = $1;
     }
     socket( server_socket, AF_INET, SOCK_STREAM, getprotobyname('tcp') )
         or die "Socket $!\n";
