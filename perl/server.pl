@@ -26,9 +26,10 @@ $SIG{INT} = $SIG{TERM} = sub {
 sub main {
     my $argstr = join( " ", @ARGV );    #server -p8080 -r /home/toor
     $argstr = " $argstr ";
-    if($argstr =~ /\s-h\s\s/ ){
+    if($argstr =~ /\s-h\s/ ){
         print "usage:\n";
         print "      perl server.pl -p8080 -r /home/toor/webapp\n";
+	exit(0);
     }
     if ( $argstr =~ /\s-p\s?\d{2,5}\s/ ) {
         ( $port = $argstr ) =~ s/\s-p\s*?(\d+)\s/$1/;
