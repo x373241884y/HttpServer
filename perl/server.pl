@@ -26,7 +26,7 @@ $SIG{INT} = $SIG{TERM} = sub {
 sub main {
     my $argstr = join( " ", @ARGV );    #server -p8080 -r /home/toor
     $argstr = " $argstr ";
-    if($argstr =~ /\s-h\s/ ){
+    if ( $argstr =~ /\s-h\s/ ) {
         print "usage:\n";
         print "      perl server.pl -p8080 -r /home/toor/webapp\n";
         exit(0);
@@ -72,20 +72,19 @@ sub accept_request {    # handle a request
     $now = strftime( "%Y-%m-%d %H:%M:%S", localtime );
     print "$now $request{'method'} $uri\n";
     $uri =~ s/(\?.*)//;
-    $uri .= "index.html" if ( $uri =~ /\/$/ );
     if ( $uri =~ /\w+\.html$/ ) {
         $mime = $mime{'html'};
     }
-    elsif ( $uri =~ /\w+\.css/ ) {
+    elsif ( $uri =~ /\w+\.css$/ ) {
         $mime = $mime{"css"};
     }
-    elsif ( $uri =~ /\w+\.js/ ) {
+    elsif ( $uri =~ /\w+\.js$/ ) {
         $mime = $mime{"js"};
     }
-    elsif ( $uri =~ /\w+\.json/ ) {
+    elsif ( $uri =~ /\w+\.json$/ ) {
         $mime = $mime{"json"};
     }
-    elsif ( $uri =~ /\w+\.do/ ) {
+    elsif ( $uri =~ /\w+\.do$/ ) {
         $mime = $mime{"json"};
         my $prefix;
         my $suffix = $uri;
@@ -100,7 +99,6 @@ sub accept_request {    # handle a request
             close(client_socket);
             exit(1);
         }
-
     }
     else {
         $mime = "text/html";
@@ -108,6 +106,14 @@ sub accept_request {    # handle a request
     my $filename = File::Spec->catfile( $root, $uri );
     if ( -e -f $filename ) {
         send_success($filename);
+    }
+    elsif ( -e -d $filename ) {
+        if ( -e -f "$filename/index.html" ) {
+            send_success("$filename/index.html");
+        }
+        else {
+            resp_filelist($filename);
+        }
     }
     else {
         resp_error( 404, "Not Found" );
@@ -138,6 +144,37 @@ sub parse_headers {
     }
 }
 
+sub resp_headers {
+    print client_socket "HTTP/1.0 200 OK\n";
+    print client_socket "Content-Type: $mime;charset: UTF-8\n";
+    print client_socket "Date: $now\n";
+    print client_socket "Server: xyserver\n";
+    print client_socket "\n";
+}
+
+sub resp_filelist {
+    my ($directory) = shift;
+    opendir( DIR, $directory ) or die "cannot open $directory:$!";
+    resp_headers();
+    ( my $shortdir = $directory ) =~ s{$root}{};
+    print client_socket
+        "<html><head><title>Index of ./</title></head><body><h1>Directory:$shortdir</h1><table border='0'><tbody>";
+    print client_socket
+        "<tr><td><a href='../'>Parent Directory</a></td><td></td><td></td></tr>";
+    foreach ( sort readdir DIR ) {
+        next if (/^\./);
+        my @info = stat("$directory/$_");
+        ( my $href = "$shortdir/$_" ) =~ s/\/\//\//;
+        $href = "$href/" if ( -d "$directory/$_" );
+        my $size = $info[7];
+        my $mtime = strftime( "%Y-%m-%d %H:%M:%S", localtime( $info[9] ) );
+        print client_socket
+            "<tr><td><a href='$href'>$_</a></td><td style='text-align:right'>$size  bytes</td><td> $mtime</td></tr>";
+    }
+    closedir DIR;
+    print client_socket "</tbody></table></body></html>";
+}
+
 sub resp_error {    #status, message
     my ( $status, $error ) = @_;
     print client_socket "HTTP/1.0 $status $error\n";
@@ -145,15 +182,13 @@ sub resp_error {    #status, message
     print client_socket "Date: $now\n";
     print client_socket "Server: xyserver\n";
     print client_socket "\n";
+    print client_socket
+        "<html><head><title>Http Error</title></head><body><h2>Http Error...</h2><p>errror status:$status</p><pre>error message:$error</pre><hr><i><small>Powered by javaway</i></body></html>";
 }
 
 sub send_success {
     my $filename = shift;
-    print client_socket "HTTP/1.0 200 OK\n";
-    print client_socket "Content-Type: $mime;charset: UTF-8\n";
-    print client_socket "Date: $now\n";
-    print client_socket "Server: xyserver\n";
-    print client_socket "\n";
+    resp_headers();
     open FILE, "<$filename"
         or die "cannot open $filename:$!";
     foreach (<FILE>) {
