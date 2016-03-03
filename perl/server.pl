@@ -165,6 +165,7 @@ sub resp_filelist {
         $href = "$href/" if ( -d "$directory/$_" );
         my $size = $info[7];
         my $mtime = strftime( "%Y-%m-%d %H:%M:%S", localtime( $info[9] ) );
+        $href=~ s/\/\//\//g;
         print client_socket
             "<tr><td><a href='$href'>$_</a></td><td style='text-align:right'>$size  bytes</td><td> $mtime</td></tr>";
     }
