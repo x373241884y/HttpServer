@@ -143,7 +143,7 @@ sub parse_headers {
 
 sub resp_headers {
     print client_socket "HTTP/1.0 200 OK\n";
-    print client_socket "Content-Type: $mime;charset: UTF-8\n";
+    print client_socket "Content-Type: $mime;charset: utf-8\n";
     print client_socket "Date: $now\n";
     print client_socket "Server: xyserver\n";
     print client_socket "\n";
@@ -176,7 +176,7 @@ sub resp_filelist {
 sub resp_error {    #status, message
     my ( $status, $error ) = @_;
     print client_socket "HTTP/1.0 $status $error\n";
-    print client_socket "Content-Type: text/html;charset: UTF-8\n";
+    print client_socket "Content-Type: text/html;charset: utf-8\n";
     print client_socket "Date: $now\n";
     print client_socket "Server: xyserver\n";
     print client_socket "\n";
