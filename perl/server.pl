@@ -66,12 +66,14 @@ sub accept_request {    # handle a request
                                       # my $socket = shift;
     &parse_headers(client_socket);    #parse
     my $uri = $request{'uri'};
-
+    if(!$uri){
+        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
+    }
     # my $now = `date`;
     # $now =~ s/\n//;
     $now = strftime( "%Y-%m-%d %H:%M:%S", localtime );
     print "$now $request{'method'} $uri\n";
-    $uri =~ s/(\?.*)//;
+    $uri =~ s/(\?.*)// if($uri=~/\?.*/);
     if ( $uri =~ /\w+\.html$/ ) {
         $mime = $mime{'html'};
     }
@@ -164,7 +166,7 @@ sub resp_filelist {
     foreach ( sort readdir DIR ) {
         next if (/^\./);
         my @info = stat("$directory/$_");
-        ( my $href = "$shortdir/$_" ) =~ s/\/\//\//;
+        ( my $href = "$shortdir/$_" ) =~ s/\/\//\//g;
         $href = "$href/" if ( -d "$directory/$_" );
         my $size = $info[7];
         my $mtime = strftime( "%Y-%m-%d %H:%M:%S", localtime( $info[9] ) );
