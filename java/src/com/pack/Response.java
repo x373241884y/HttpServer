@@ -31,7 +31,7 @@ public class Response {
     }
 
     private void init() {
-        headers.put("contentType","text/plain");
+        headers.put("contentType","text/html");
         headers.put("status","200 OK");
         headers.put("charSet","utf-8");
         headers.put("date",new Date().toString());
@@ -39,8 +39,12 @@ public class Response {
         headers.put("server","javaway server");
     }
 
-    private void analyseMime() {
+    private void analyseMime() throws IOException {
         String uri = request.getRequestURI();
+        if(uri==null){
+            socket.close();
+            return;
+        }
         uri = uri.replaceAll("\\?.*", "");
         if (uri.endsWith(".html")) {
             setContentType("text/html");
@@ -63,6 +67,8 @@ public class Response {
                 String prefix = referer.replaceAll("(htmls)(.*\\/)\\w+\\.html", "/data/$2");
                 uri = prefix + uri.replaceAll(".*\\/(.*)\\.do", "$1.json");
             }
+        }else{
+            setContentType("text/html");
         }
         this.resourcepath=uri;
     }
@@ -70,12 +76,12 @@ public class Response {
     public void error(String status, String message) {
         pw.println("HTTP/1.1 "+status);
         pw.println("Server:"+headers.get("server"));
-        pw.println("Content-Type:text/html"+";charset:"+headers.get("charSet"));
+        pw.println("Content-Type:text/html"+";charset:"+headers.get("charSet")+";");
         pw.println("Last-Modified:"+headers.get("date"));
         pw.println("Date:"+headers.get("date"));
         pw.println("Accept-ranges: bytes");
         pw.println();
-        pw.println("<html><head><title>test server</title></head><body><p> Http Status => "+status+"<br/><br/><br/> Http Url => " + request.getRequestURI() + "</p></body></html>");
+        pw.println("<html><head><title>Http Error</title></head><body><h2>Http Error...</h2><p>errror status:"+status+"</p><pre>error message:"+status+" for request "+request.getRequestURI()+"</pre><hr><i><small>Powered by javaway</i></body></html>");
         pw.flush();
         pw.close();
     }
@@ -87,7 +93,7 @@ public class Response {
     public void sendHeaders() {
         pw.println("HTTP/1.1 "+headers.get("status"));
         pw.println("Server:"+headers.get("server"));
-        pw.println("Content-Type:"+headers.get("contentType")+";charset:"+headers.get("charSet"));
+        pw.println("Content-Type:"+headers.get("contentType")+";charset:"+headers.get("charSet")+";");
         pw.println("Last-Modified:"+headers.get("date"));
         pw.println("Date:"+headers.get("date"));
         pw.println("Accept-ranges: bytes");

@@ -33,10 +33,14 @@ public class Request {
         while (true) {
             temp = new byte[1024];
             int flag = inputStream.read(temp);
-            String line = new String(temp, 0, flag);
-            line = URLDecoder.decode(line, "UTF-8");
-            sb.append(line);
-            if (flag < 1024) {
+            if(flag!=-1){
+                String line = new String(temp, 0, flag);
+                line = URLDecoder.decode(line, "UTF-8");
+                sb.append(line);
+                if (flag < 1024) {
+                    break;
+                }
+            }else{
                 break;
             }
         }
@@ -54,9 +58,6 @@ public class Request {
                 int index = s.indexOf("HTTP");
                 String uri = s.substring(3 + 1, index - 1);// 用index-1可以去掉连接中的空格
                 uri = uri.replaceAll("\\?.*", "");
-                if (uri.endsWith("/")) {
-                    uri += "index.html";
-                }
                 this.requestURI = uri;
                 this.protocol = s.substring(index);
             } else if (s.startsWith("POST")) {
@@ -65,9 +66,6 @@ public class Request {
                 int index = s.indexOf("HTTP");
                 String uri = s.substring(3 + 1, index - 1);// 用index-1可以去掉连接中的空格
                 uri = uri.replaceAll("\\?.*", "");
-                if (uri.endsWith("/")) {
-                    uri += "index.html";
-                }
                 this.requestURI = uri;
                 this.protocol = s.substring(index);
 
