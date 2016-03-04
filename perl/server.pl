@@ -66,6 +66,10 @@ sub accept_request {    # handle a request
                                       # my $socket = shift;
     &parse_headers(client_socket);    #parse
     my $uri = $request{'uri'};
+    if(!$uri){
+        close(client_socket);
+        return;
+    }
     $now = strftime( "%Y-%m-%d %H:%M:%S", localtime );#my $now = `date`; # $now =~ s/\n//;
     print "$now $request{'method'} $uri\n";
     $uri =~ s/(\?.*)// if($uri=~/\?.*/);
