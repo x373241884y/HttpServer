@@ -48,6 +48,7 @@ sub main {
     listen( server_socket, 5 ) || die "Listen $!\n";
 
     print "http server start in http://127.0.0.1:/$port\n";
+    print "http server work  in path $root\n";
     while ( !$quit ) {
         accept( client_socket, server_socket ) || die "Accept $!\n";
         defined( $pid = fork ) || die "Fork: $!\n";
