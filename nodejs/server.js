@@ -47,9 +47,9 @@ function init_response(request) {
     if (/\?.*/.test(uri)) {
         uri = uri.replace(/\?.*/, "");
     }
-    if (/\/$/.test(uri)) {
-        uri += "index.html";
-    }
+    // if (/\/$/.test(uri)) {
+    //     uri += "index.html";
+    // }
     if (/\w+\.html$/.test(uri)) {
         response.mime = MIME.html;
     } else if (/\w+\.css$/.test(uri)) {
@@ -73,6 +73,32 @@ function init_response(request) {
     response.resource = path.join(config.root, uri);
 }
 
+function resp_filelist(socket, resource) {
+    socket.write("HTTP/1.0 200 OK\n");
+    socket.write("Content-Type: text/html" + ";charset: UTF-8\n");
+    socket.write("Date: " + new Date() + "\n");
+    socket.write("Server: xyserver\n");
+    socket.write("\n");
+    var current = resource.substr(config.root.length - 1);
+    socket.write("<html><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8' /> <title>Index of ./</title></head><body><h1>Directory:" + current + "</h1><table border='0'><tbody>");
+    socket.write("<tr><td><a href='../'>Parent Directory</a></td><td></td><td></td></tr>");
+    var files = fs.readdirSync(resource);
+    for (var i = 0; i < files.length; i++) {
+        if (/^\./.test(files[i])) {
+            continue;
+        }
+        var stat = fs.statSync(path.join(config.root, current, files[i]));
+        href = files[i];
+        if (stat.isFile()) {
+            href = current + href;
+        } else if (stat.isDirectory() && href != "/") {
+            href = current + href + "/";
+        }
+        socket.write("<tr><td><a href='" + href + "'>" + files[i] + "</a></td><td>" + stat.size + " bytes</td><td>" + formatDate(stat.mtime, "yyyy-MM-dd HH:mm:ss") + "</td></tr>");
+    };
+    socket.write("</tbody></table></body></html>");
+}
+
 function resp_success(socket, resource) {
     socket.write("HTTP/1.0 200 OK\n");
     socket.write("Content-Type: " + response.mime + ";charset: UTF-8\n");
@@ -88,6 +114,7 @@ function resp_success(socket, resource) {
             break;
         }
     }
+    fs.close(fd);
 }
 
 function resp_error(socket, status, message) {
@@ -96,7 +123,7 @@ function resp_error(socket, status, message) {
     socket.write("Date: " + new Date() + "\n");
     socket.write("Server: xyserver\n");
     socket.write("\n");
-    socket.write("<html><head><title>error</title></head><body>error message:" + message + "</body></html>");
+    socket.write("<html><head><title>Http Error</title></head><body><h2>Http Error...</h2><p>errror status:"+status+"</p><pre>error message:"+message+"</pre><hr><i><small>Powered by javaway</i></body></html>");
 }
 function accept_request(socket) {
     socket.on('data', function (data) {
@@ -105,30 +132,32 @@ function accept_request(socket) {
         console.log(formatDate(new Date(), "yyyy-MM-dd HH:mm:ss") + " " + request.method + " " + request.uri); //log
         var status = init_response(request);
         if (!status) {
-            fs.exists(response.resource, function (exists) {
-                    resp_success(socket, response.resource);
-                    socket.destroy();
-                // if (exists) {
-                //     fs.stat(response.resource, function (err, stats) {
-                //         if (!err && stats.isFile()) {
-                //             resp_success(socket, response.resource);
-                //             socket.destroy();
-                //         } else {
-                //             resp_error(socket, 500, "Bad Request");
-                //             socket.destroy();
-                //         }
-                //     });
-                // } else {
-                //     resp_error(socket, 404, "Not Found");
-                //     socket.destroy();
-                // }
-            });
+            if (fs.existsSync(response.resource)) {
+                var stats = fs.lstatSync(response.resource);
+                try {
+                    if (stats.isFile()) {
+                        resp_success(socket, response.resource);
+                    } else if (stats.isDirectory()) {
+                        if(fs.existsSync(path.join(response.resource,"index.html"))){
+                            resp_success(socket, path.join(response.resource,"index.html"));
+                        }else{
+                            resp_filelist(socket, response.resource);
+                        }
+                    } else {
+                        resp_error(socket, 500, "Bad Request");
+                    }
+                } catch (e) {
+                    resp_error(socket, 500, "Bad Request");
+                }
+
+            } else {
+                resp_error(socket, 404, "Not Found");
+            }
         } else {
             resp_error(socket, 500, "Bad Request");
-            socket.destroy();
         }
+        socket.destroy();
     });
-
     socket.on('error', function (e) {
         console.log(e);
     });
@@ -140,6 +169,7 @@ function start() {
     });
     httpServer.listen(config.port);
     console.log("http server running in http://127.0.0.1:" + config.port);
+    console.log("server start work in :" + config.root);
 }
 
 function main() { //parse args
