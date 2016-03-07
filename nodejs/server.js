@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 var config = {
     port : 8080,
     root : process.cwd(),
@@ -79,6 +80,9 @@ function resp_filelist(socket, resource) {
     socket.write("Date: " + new Date() + "\n");
     socket.write("Server: xyserver\n");
     socket.write("\n");
+    if(/[^\/]$/.test(config.root)){
+        config.root=path.join(config.root,"/");
+    }
     var current = resource.substr(config.root.length - 1);
     socket.write("<html><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8' /> <title>Index of ./</title></head><body><h1>Directory:" + current + "</h1><table border='0'><tbody>");
     socket.write("<tr><td><a href='../'>Parent Directory</a></td><td></td><td></td></tr>");
