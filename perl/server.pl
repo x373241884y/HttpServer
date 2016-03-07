@@ -159,8 +159,9 @@ sub resp_filelist {
     opendir( DIR, $directory ) or die "cannot open $directory:$!";
     resp_headers();
     ( my $shortdir = $directory ) =~ s{$root}{};
+    $shortdir=~s/\/\//\//g;
     print client_socket
-        "<html><head><title>Index of ./</title></head><body><h1>Directory:$shortdir</h1><table border='0'><tbody>";
+        "<html><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8' /> <title>Index of ./</title></head><body><h1>Directory:$shortdir</h1><table border='0'><tbody>";
     print client_socket
         "<tr><td><a href='../'>Parent Directory</a></td><td></td><td></td></tr>";
     foreach ( sort readdir DIR ) {
