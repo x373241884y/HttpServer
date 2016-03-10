@@ -57,11 +57,11 @@ function init_response(request) {
         response.mime = MIME.css;
     } else if (/\w+\.js$/.test(uri)) {
         response.mime = MIME.js;
-    } else if (/\w+\.json/.test(uri)) {
+    } else if (/\w+\.json$/.test(uri)) {
         response.mime = MIME.json;
-    } else if (/\w+\.do/.test(uri)) {
+    } else if (/\w+\.do$/.test(uri)) {
         if (request.$Referer) {
-            var subffix = uri.replace(/(\w+)\.do/, "$1.json");
+            var subffix = uri.replace(/(\w+)\.do$/, "$1.json");
             var prefix = request.$Referer.replace(/htmls\/(.*\/)\w+\.html$/, "/data/$1");
             var uri = prefix + subffix;
             response.mime = MIME.json;
