@@ -99,11 +99,9 @@ sub accept_request {    # handle a request
         else {
             $suffix =~ s/\/(\w+)\.do/$1.json/;
             $uri = "/data/$suffix";
-            unless (-e $uri) {
-                resp_error( 500, "Bad Request" );
-                close(client_socket);
-                exit(1);
-            }
+            # resp_error( 500, "Bad Request" );
+            # close(client_socket);
+            # exit(1);
         }
     }
     else {
