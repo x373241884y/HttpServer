@@ -13,7 +13,8 @@ MIME = {
     html : 'text/html',
     css : 'text/css',
     js : 'application/javascript',
-    json : 'application/json'
+    json : 'application/json',
+    svg:"image/svg+xml"
 };
 
 function formatDate(date, style) { //date format util
@@ -59,6 +60,8 @@ function init_response(request) {
         response.mime = MIME.js;
     } else if (/\w+\.json$/.test(uri)) {
         response.mime = MIME.json;
+    }else if(/\w+\.svg$/.test(uri)){
+        response.mime=MIME.svg;
     } else if (/\w+\.do$/.test(uri)) {
         if (request.$Referer) {
             var subffix = uri.replace(/(\w+)\.do$/, "$1.json");
