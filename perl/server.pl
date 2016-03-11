@@ -6,6 +6,7 @@ use Socket;
 use Cwd;
 use POSIX qw(strftime);
 use File::Spec;
+use POSIX ":sys_wait_h";
 my $port = 8080;     #port
 my $root = getcwd;
 my %request;         #save headers
@@ -22,6 +23,13 @@ $SIG{INT} = $SIG{TERM} = sub {
     $quit++;
     exit(0);
 };
+
+sub REAPER {
+    while ( ( my $pid = waitpid( -1, WNOHANG ) ) > 0 ) {
+        print "SIGCHLD pid $pid\n";
+    }
+}
+$SIG{CHLD} = \&REAPER;
 
 sub main {
     my $argstr = join( " ", @ARGV );    #server -p8080 -r /home/toor
@@ -50,7 +58,12 @@ sub main {
     print "http server start in http://127.0.0.1:/$port\n";
     print "http server work  in path $root\n";
     while ( !$quit ) {
-        accept( client_socket, server_socket ) || die "Accept $!\n";
+        accept( client_socket, server_socket ) || do {
+
+            # try again if accept() returned because a signal was received
+            next if $!{EINTR};
+            die "accept: $!";
+        };
         defined( $pid = fork ) || die "Fork: $!\n";
         if ( $pid == 0 ) {
             &accept_request(client_socket);
@@ -67,13 +80,14 @@ sub accept_request {    # handle a request
                                       # my $socket = shift;
     &parse_headers(client_socket);    #parse
     my $uri = $request{'uri'};
-    if(!$uri){
+    if ( !$uri ) {
         close(client_socket);
         return;
     }
-    $now = strftime( "%Y-%m-%d %H:%M:%S", localtime );#my $now = `date`; # $now =~ s/\n//;
+    $now = strftime( "%Y-%m-%d %H:%M:%S", localtime )
+        ;                             #my $now = `date`; # $now =~ s/\n//;
     print "$now $request{'method'} $uri\n";
-    $uri =~ s/(\?.*)// if($uri=~/\?.*/);
+    $uri =~ s/(\?.*)// if ( $uri =~ /\?.*/ );
     if ( $uri =~ /\w+\.html$/ ) {
         $mime = $mime{'html'};
     }
@@ -85,6 +99,9 @@ sub accept_request {    # handle a request
     }
     elsif ( $uri =~ /\w+\.json$/ ) {
         $mime = $mime{"json"};
+    }
+    elsif ( $uri =~ /\w+\.svg$/ ) {
+        $mime = "image/svg+xml";
     }
     elsif ( $uri =~ /\w+\.do$/ ) {
         $mime = $mime{"json"};
@@ -99,6 +116,7 @@ sub accept_request {    # handle a request
         else {
             $suffix =~ s/\/(\w+)\.do/$1.json/;
             $uri = "/data/$suffix";
+
             # resp_error( 500, "Bad Request" );
             # close(client_socket);
             # exit(1);
@@ -161,7 +179,7 @@ sub resp_filelist {
     opendir( DIR, $directory ) or die "cannot open $directory:$!";
     resp_headers();
     ( my $shortdir = $directory ) =~ s{$root}{};
-    $shortdir=~s/\/\//\//g;
+    $shortdir =~ s/\/\//\//g;
     print client_socket
         "<html><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8' /> <title>Index of ./</title></head><body><h1>Directory:$shortdir</h1><table border='0'><tbody>";
     print client_socket
@@ -173,7 +191,7 @@ sub resp_filelist {
         $href = "$href/" if ( -d "$directory/$_" );
         my $size = $info[7];
         my $mtime = strftime( "%Y-%m-%d %H:%M:%S", localtime( $info[9] ) );
-        $href=~ s/\/\//\//g;
+        $href =~ s/\/\//\//g;
         print client_socket
             "<tr><td><a href='$href'>$_</a></td><td style='text-align:right'>$size  bytes</td><td> $mtime</td></tr>";
     }
