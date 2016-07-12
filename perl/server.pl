@@ -4,6 +4,7 @@
 use warnings;
 use Socket;
 use Cwd;
+use URI;
 use POSIX qw(strftime);
 use File::Spec;
 use POSIX ":sys_wait_h";
@@ -155,7 +156,7 @@ sub parse_headers {
     }
     if ( $content =~ m/^(.*)\s(\/.*)\s(HTTP\/\d\.\d)/ ) {
         $request{'method'}   = $1;
-        $request{'uri'}      = $2;
+        $request{'uri'}      = URI::Escape::uri_unescape($2);
         $request{'protocol'} = $3;
     }
     my @header = split( /\n/, $content );
