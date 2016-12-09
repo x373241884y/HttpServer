@@ -115,7 +115,7 @@ sub accept_request {    # handle a request
             $uri = "$prefix$suffix";
         }
         else {
-            $suffix =~ s/\/(\w+)\.do/$1.json/;
+            $suffix =~ s/\/(\w[\w\d\.]+)\.do/$1.json/;
             $uri = "/data/$suffix";
 
             # resp_error( 500, "Bad Request" );
